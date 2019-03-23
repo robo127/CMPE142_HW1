@@ -9,10 +9,10 @@
 #include<readline/readline.h> 
 #include<readline/history.h> 
   
-#define MAXCOM 1000 // max number of letters to be supported 
-#define MAXLIST 100 // max number of commands to be supported 
+#define MAXCHAR 1000 // max number of letters to be supported 
+#define MAXCMD 100 // max number of commands to be supported 
   
- //use gcc -o wish wish.c -lreadline at end of compile line
+ //use gcc -o shell shell.c -lreadline at end of compile line
 // Clearing the shell using escape sequences 
 #define clear() printf("\033[H\033[J") 
 
@@ -113,7 +113,7 @@ int commandLineHandler(char** parsed)
 		}
 		if(paths > 0)
 		{
-			new = malloc (sizeof(char)*MAXCOM);
+			new = malloc (sizeof(char)*MAXCHAR);
 			strcat(new,pathway);
 			for(i = 0; i<paths; i++)
 			{
@@ -138,10 +138,8 @@ int commandLineHandler(char** parsed)
 			char error_message[30] = "An error has occurred\n";
   			write(STDERR_FILENO, error_message, strlen(error_message));
 		}
-	printf("test\n");
 	const char* s = getenv("PATH");
 	printf("PATH :%s\n",(s!=NULL)? s : "getenv returned NULL");
-	printf("end test\n");
 	        return 1; 
     	default: 
     		break; 
@@ -153,7 +151,7 @@ int commandLineHandler(char** parsed)
 void seperateSpace(char* str, char** parsed) 
 { 
     int i; 
-    for (i = 0; i < MAXLIST; i++) { 
+    for (i = 0; i < MAXCMD; i++) { 
         parsed[i] = strsep(&str, " "); 
         if (parsed[i] == NULL) 
             break; 
@@ -176,10 +174,15 @@ void execArgs(char** parsed)
 
 	//ls & ls > c.txt & echo lol
 	int holderForNextCMD = 0;
-	
-	int originalSize = sizeof(parsed)/sizeof(parsed[0]);
+	int temp = 0;
+	while(parsed[temp]!=NULL)
+	{
+		temp++;
+	}
+	int originalSize = temp;
 
 	int numberOfCMD = 1;
+
 	for(int i = 0; i < originalSize ; i++)
 	{
 		if(parsed[i+1] != NULL)
@@ -190,16 +193,11 @@ void execArgs(char** parsed)
 			}
 		}
 	}	
-	printf("%i commands\n",numberOfCMD);
-		int newSize = 0;
+	int newSize = 0;
 	//Loop in case of parallel processing
 	for(int i = 0; i < numberOfCMD; i++)
 	{
-		printf("%i round", i);
-		if(i+1==numberOfCMD)
-		{
-			printf("dfsfdsfround\n");
-		}
+		printf("%i rounds\n",i);
 		newSize = 0;
 		//get next size of string of CMD ARG
 		for(int k = holderForNextCMD; k < originalSize; k++)
@@ -217,9 +215,7 @@ void execArgs(char** parsed)
 				}
 			}
 		} 
-		printf("next round %i\n", i);
 		char** temp = calloc(newSize,sizeof(char*));
-		printf("next2 round %i\n", i);
 		//set cmd for string to exec
 		temp[0]=parsed[holderForNextCMD];
 		int placeholder = holderForNextCMD;
@@ -236,11 +232,8 @@ void execArgs(char** parsed)
 					break;
 				}
 			}
-			temp[t] = parsed[placeholder];
+			temp[t] = parsed[placeholder+1];
 		}
-		printf("next3\n");
-		//printf("%li dab dab yea\n", newSize/sizeof(int));
-
 		//get new position of commands, update holderForNextCMD
 		for(int j = holderForNextCMD; j < originalSize; j++)
 		{
@@ -256,24 +249,28 @@ void execArgs(char** parsed)
 			}
 
 		}
-		printf("next4 round \n");
-		printf("%i\n",holderForNextCMD);
+	
 		pid_t pid = fork();
 		if (pid == -1) 
 		{ 
+
 			char error_message[30] = "An error has occurred\n";
   			write(STDERR_FILENO, error_message, strlen(error_message));
         		return; 
 		} 
+
 		else if (pid == 0) 
+
 		{ 
+
 			int place1 = 1;
 			int place2 = 2;
 			if(parsed[holderForNextCMD+1] == NULL)
 			{
-				
+
 				if (execvp(temp[0], temp) < 0) 
 				{ 
+
        	     				char error_message[30] = "An error has occurred\n";
   					write(STDERR_FILENO, error_message, strlen(error_message));
 				}
@@ -284,6 +281,7 @@ void execArgs(char** parsed)
 				dup2(place2, STDOUT_FILENO);
 				if(parsed[holderForNextCMD+2]==NULL || !strcmp(parsed[holderForNextCMD+2], ">"))
 				{
+
 					char error_message[30] = "An error has occurred\n";
   					write(STDERR_FILENO, error_message, strlen(error_message));
 				}
@@ -291,7 +289,8 @@ void execArgs(char** parsed)
 				{
 					if(execvp(temp[0], temp)<0)
 					{
-					char error_message[30] = "An error has occurred\n";
+
+					char error_message[30] = "An error has occurre1d\n";
   					write(STDERR_FILENO, error_message, strlen(error_message));
 					}
 				}
@@ -301,6 +300,7 @@ void execArgs(char** parsed)
 			{
 				if(execvp(temp[0], temp)<0)
 				{
+
 					char error_message[30] = "An error has occurred\n";
   					write(STDERR_FILENO, error_message, strlen(error_message));
 				}
@@ -320,8 +320,8 @@ void execArgs(char** parsed)
   
 int main() 
 { 
-	char inputString[MAXCOM]; 
-	char *parsedArgs[MAXLIST];
+	char inputString[MAXCHAR]; 
+	char *parsedArgs[MAXCMD];
 	setbuf(stdout, NULL);
 	int execFlag = 0;
 	int start = 0;
@@ -329,10 +329,9 @@ int main()
 	static char *var = "PATH=/bin";
 	//start = putenv(var);
         init_shell(); 
-	printf("test\n");
+	printf("Setting initial PATH\n");
 	const char* s = getenv("PATH");
 	printf("PATH :%s\n",(s!=NULL)? s : "getenv returned NULL");
-	printf("end test\n");
   	if(start == 0)
 	{
 		
@@ -368,4 +367,3 @@ int main()
 
 	
 } 
-
